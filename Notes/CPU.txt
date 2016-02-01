@@ -1,0 +1,19 @@
+ARM7TDMI
+	- 32 bit processor
+	- Fetch, Decode, Execute pipeline
+		- Fetch the instruction from memory (read the next byte(s) from the ROM)
+		- Decode the instruction and the registers used (match the byte)
+		- Execute (dispatch the instruction to the correct location)
+	- Single 32 bit data bus
+		- Only load, store, and swap instructions can access data from memory
+		- Data can be
+			- 8 bit (bytes)
+			- 16 bit (half-words)
+			- 32 bit (words)
+		- 4 byte boundary for words (full word spacing)
+		- 2 byte boundary for half words
+	- Memory cycle
+		- Idle cycle
+		- Nonsequential cycle
+		- Sequential cycle
+		- Coprocessor register transfer cycle
