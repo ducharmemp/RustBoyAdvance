@@ -4,7 +4,8 @@ use std::error::Error;
 use std::io::Read;
 use std::path::Path;
 
-mod cpu;
+extern crate byteorder;
+
 mod gameboy;
 
 fn read_bin<P: AsRef<Path>>(path: P) -> Vec<u8> {
@@ -37,5 +38,6 @@ fn main() {
 	println!("Reading {:?}", game_rom);
     let rom = read_bin(game_rom);
 
-	let console = gameboy::GameBoyAdvance::new(bios, rom);
+	let mut console = gameboy::cpu::CPU::new(bios, rom);
+    console.run();
 }

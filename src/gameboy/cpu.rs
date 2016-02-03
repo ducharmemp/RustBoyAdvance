@@ -18,11 +18,14 @@ If multiple exceptions occur simultaneously, prioritize:
 	- Prefetch Abort
 	- Undefined Instruction, Software Interrupt
 */
+use super::mmu::RandomAccessMemory;
+use super::common::{CPUExecutionMode, CPUInstructionMode, CPUByteOrder};
+
 /*
 Memory map thanks to http://problemkaputt.de/gbatek.htm#gbamemorymap
 */
 // Internal memory
-const SYS_MAX_MEMORY: usize = 0x0E00FFFF;
+const SYS_MAX_MEMORY: u32 = 0x0E00FFFF;
 
 fn bios_memory (x: u32)->bool {0x00000000 <= x && x <= 0x00003FFF}
 fn wramb_memory (x: u32)->bool {0x02000000 <= x && x <= 0x0203FFFF}
@@ -40,18 +43,6 @@ fn wait_1_memory (x: u32)->bool {0x0A000000 <= x && x<= 0x0BFFFFFF}
 fn wait_2_memory (x: u32)->bool {0x0C000000 <= x && x <= 0x0DFFFFFF}
 fn gp_sram_memory (x: u32)->bool {0x0E000000 <= x && x <= SYS_MAX_MEMORY}
 
-fn build_system_ram(bios_rom: Vec<u8>, game_rom: Vec<u8>) -> Vec<u8> {
-
-    let mut ram = vec![0; SYS_MAX_MEMORY];
-    ram.extend_from_slice(&bios_rom);
-    let mut writer = Cursor::new(ram);
-
-    // Write the game into our RAM vector
-    writer.seek(SeekFrom::Start(0x08000000));
-    writer.write_all(&game_rom);
-    writer.into_inner()
-}
-
 // CPSR Flags
 const N_FLAG: u32 = 0x80000000;
 const Z_FLAG: u32 = 0x40000000;
@@ -64,56 +55,17 @@ const STATE_BIT: u32 = 0x20;
 
 const MODE_BITS: u32 = 0xF;
 
-// Configurations
-#[allow(dead_code)]
-#[derive(Debug)]
-enum CPUExecutionMode {
-	User,
-	FIQ,
-	Supervisor,
-	Abort,
-	IRQ,
-	Undefined
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-enum CPUByteOrder {
-	BigEndian,
-	LittleEndian
-}
-
-#[allow(dead_code)]
-#[derive(Debug)]
-enum CPUInstructionMode {
-	ARM32,
-	Thumb
-}
-
-// These are the default modes when the GBA is turned on
-impl Default for CPUExecutionMode {
-	fn default() -> CPUExecutionMode {CPUExecutionMode::Supervisor}
-}
-
-impl Default for CPUByteOrder {
-	fn default() -> CPUByteOrder {CPUByteOrder::BigEndian}
-}
-
-impl Default for CPUInstructionMode {
-	fn default() -> CPUInstructionMode {CPUInstructionMode::ARM32}
-}
-
-#[derive(Debug, Default)]
 pub struct CPU {
 	// unbanked registers r0-r7
 	gen_registers: [u32; 8],
 
 	// Banked registers, depend on the current mode
 	// r8-r14
-	hi_registers_user: [u32; 6],
-	hi_registers_supervisor: [u32; 6],
-	hi_registers_irq: [u32; 6],
-	hi_registers_fiq: [u32; 6],
+	hi_registers_user: [u32; 7],
+	hi_registers_supervisor: [u32; 7],
+	hi_registers_irq: [u32; 7],
+	hi_registers_fiq: [u32; 7],
+    pc: u32,
 
 	// Current program status register
 	cpsr: u32,
@@ -123,14 +75,32 @@ pub struct CPU {
 	execution_mode: CPUExecutionMode,
 	bytemode: CPUByteOrder,
 	instruction_mode: CPUInstructionMode,
+
+    mmu: RandomAccessMemory,
 }
 
 impl CPU {
-	pub fn new() -> CPU {
-		CPU::default()
+	pub fn new(bios: Vec<u8>, game: Vec<u8>) -> CPU {
+		CPU {
+            mmu: RandomAccessMemory::new(bios, game, SYS_MAX_MEMORY, CPUByteOrder::BigEndian),
+
+            gen_registers: [0; 8],
+            hi_registers_user: [0; 7],
+        	hi_registers_supervisor: [0; 7],
+        	hi_registers_irq: [0; 7],
+        	hi_registers_fiq: [0; 7],
+            pc: 0,
+            cpsr: 0,
+        	status: 0,
+
+        	// CPU Configurations
+        	execution_mode: CPUExecutionMode::Supervisor,
+        	bytemode: CPUByteOrder::BigEndian,
+        	instruction_mode: CPUInstructionMode::ARM32,
+        }
 	}
 
-	pub fn decode_instruction_32(&mut self, ins: u32) {
+	fn decode_instruction_32(&mut self, ins: u32) {
 		let condition = ins >> 28;
 
 		// This gets us the 8 bits after the condition and ors it with the 2nd 4 bits of the instruction
@@ -221,7 +191,9 @@ impl CPU {
 	}
 
 	fn run_arm(&mut self) {
-
+        let next_instruction = self.mmu.read_32(self.pc);
+        println!("{}", next_instruction);
+        self.pc += 1;
 	}
 
 	fn run_thumb(&mut self) {
@@ -230,12 +202,9 @@ impl CPU {
 
 	pub fn run(&mut self) {
 		loop {
-			let ins = self.get_next_instruction()
-
-			match self.execution_mode {
+			match self.instruction_mode {
 				CPUInstructionMode::ARM32 => self.run_arm(),
 				CPUInstructionMode::Thumb => self.run_thumb(),
-				_ => panic!("Invalid mode for instructions")
 			}
 		}
 	}
