@@ -1,6 +1,7 @@
 // Configurations
 #[allow(dead_code)]
 #[derive(Debug)]
+#[derive(PartialEq)]
 pub enum CPUExecutionMode {
 	User,
 	FIQ,
@@ -12,6 +13,7 @@ pub enum CPUExecutionMode {
 
 #[allow(dead_code)]
 #[derive(Debug)]
+#[derive(PartialEq)]
 pub enum CPUByteOrder {
 	BigEndian,
 	LittleEndian
@@ -19,6 +21,7 @@ pub enum CPUByteOrder {
 
 #[allow(dead_code)]
 #[derive(Debug)]
+#[derive(PartialEq)]
 pub enum CPUInstructionMode {
 	ARM32,
 	Thumb

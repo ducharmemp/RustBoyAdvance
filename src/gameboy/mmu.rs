@@ -8,11 +8,13 @@ use super::common::{CPUByteOrder};
 fn build_system_ram(bios_rom: Vec<u8>, game_rom: Vec<u8>, ram_size: usize) -> Vec<u8> {
     let mut ram = vec![0; ram_size];
     let mut writer = Cursor::new(ram);
-    writer.write_all(&bios_rom[..]);
+
+    // Convert the bios to a mutable slice
+    writer.write_all(&bios_rom[..]).unwrap();
 
     // Write the game into our RAM vector
     writer.seek(SeekFrom::Start(0x08000000));
-    writer.write_all(&game_rom[..]);
+    writer.write_all(&game_rom[..]).unwrap();
     writer.into_inner()
 }
 
@@ -35,11 +37,21 @@ impl RandomAccessMemory {
         }
     }
 
-    pub fn set_endianess(&mut self, endianess: CPUByteOrder) {
-        match endianess {
-            CPUByteOrder::BigEndian => self.big_endian = true,
-            CPUByteOrder::LittleEndian => self.big_endian = false,
-        }
+    // pub fn set_endianess(&mut self, endianess: CPUByteOrder) {
+    //     match endianess {
+    //         CPUByteOrder::BigEndian => self.big_endian = true,
+    //         CPUByteOrder::LittleEndian => self.big_endian = false,
+    //     }
+    // }
+
+    pub fn read_byte(&mut self, address: u32) -> u8 {
+        self.cursor.set_position(address as u64);
+        self.cursor.get_ref()[address as usize]
+    }
+
+    pub fn write_byte(&mut self, address: u32, val: u8) {
+        self.cursor.set_position(address as u64);
+        self.cursor.write(&[val]);
     }
 
     pub fn read_16(&mut self, address: u32) -> u16 {
@@ -51,6 +63,15 @@ impl RandomAccessMemory {
         }
     }
 
+    pub fn write_16(&mut self, address: u32, val: u16) {
+        self.cursor.set_position(address as u64);
+        if self.big_endian {
+            self.cursor.write_u16::<BigEndian>(val).unwrap()
+        } else {
+            self.cursor.write_u16::<LittleEndian>(val).unwrap()
+        }
+    }
+
     pub fn read_32(&mut self, address: u32) -> u32 {
         self.cursor.set_position(address as u64);
         if self.big_endian {
@@ -59,4 +80,14 @@ impl RandomAccessMemory {
             self.cursor.read_u32::<LittleEndian>().unwrap()
         }
     }
+
+    pub fn write_32(&mut self, address: u32, val: u32) {
+        self.cursor.set_position(address as u64);
+        if self.big_endian {
+            self.cursor.write_u32::<BigEndian>(val).unwrap()
+        } else {
+            self.cursor.write_u32::<LittleEndian>(val).unwrap()
+        }
+    }
+
 }

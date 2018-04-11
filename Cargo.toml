@@ -5,3 +5,8 @@ authors = ["Matt <statusquo69.ftw@gmail.com>"]
 
 [dependencies]
 byteorder = "0.4"
+bit-vec = "0.4.3"
+
+[profile.dev]
+opt-level = 0
+debug = true

@@ -4,6 +4,7 @@ use std::error::Error;
 use std::io::Read;
 use std::path::Path;
 
+extern crate bit_vec;
 extern crate byteorder;
 
 mod gameboy;
@@ -39,5 +40,5 @@ fn main() {
     let rom = read_bin(game_rom);
 
 	let mut console = gameboy::cpu::CPU::new(bios, rom);
-    console.run();
+    console.run()
 }
