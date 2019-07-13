@@ -3,7 +3,7 @@ use std::io::{Cursor, SeekFrom};
 
 use byteorder::{BigEndian, LittleEndian, ReadBytesExt, WriteBytesExt};
 
-use super::common::{CPUByteOrder};
+use super::common::CPUByteOrder;
 
 fn build_system_ram(bios_rom: Vec<u8>, game_rom: Vec<u8>, ram_size: usize) -> Vec<u8> {
     let mut ram = vec![0; ram_size];
@@ -24,10 +24,15 @@ pub struct RandomAccessMemory {
 }
 
 impl RandomAccessMemory {
-    pub fn new(bios: Vec<u8>, game: Vec<u8>, size: u32, endianess: CPUByteOrder) -> RandomAccessMemory {
+    pub fn new(
+        bios: Vec<u8>,
+        game: Vec<u8>,
+        size: u32,
+        endianess: CPUByteOrder,
+    ) -> RandomAccessMemory {
         let endian_flag: bool = match endianess {
             CPUByteOrder::BigEndian => true,
-            CPUByteOrder::LittleEndian => false
+            CPUByteOrder::LittleEndian => false,
         };
         let ram = build_system_ram(bios, game, size as usize);
 
@@ -89,5 +94,4 @@ impl RandomAccessMemory {
             self.cursor.write_u32::<LittleEndian>(val).unwrap()
         }
     }
-
 }

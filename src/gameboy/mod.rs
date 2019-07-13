@@ -1,5 +1,5 @@
-pub mod cpu;
-mod cpsr;
-mod mmu;
 mod common;
+mod cpsr;
+pub mod cpu;
+mod mmu;
 mod utils;
