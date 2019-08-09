@@ -13,3 +13,5 @@ when everything is loaded in, input "r" to advance the program and print out the
 "c" to run the program without stopping.
 
 The version of Rust used to compile this project is 1.8, and can be found at https://www.rust-lang.org/downloads.html
+
+**Note: I wrote most of this during a 48 hour period a few years ago, so the code needs restructured and it's a bit rough.**
